@@ -1,0 +1,207 @@
+# ~/.functions.sh
+
+# colored manual page
+function man() {
+    LESS_TERMCAP_mb=$'\e[1;34m'   \
+    LESS_TERMCAP_md=$'\e[1;32m'   \
+    LESS_TERMCAP_so=$'\e[1;33m'   \
+    LESS_TERMCAP_us=$'\e[1;4;31m' \
+    LESS_TERMCAP_me=$'\e[0m'      \
+    LESS_TERMCAP_se=$'\e[0m'      \
+    LESS_TERMCAP_ue=$'\e[0m'      \
+    command man "$@"
+}
+
+function open_stack_connect() {
+	if [[ $# != 1 ]] ; then
+		echo "[ERROR] Expected a single argument: the IP address of the OpenStack VM!"
+		return
+	fi
+
+	IP=$1
+	ssh -o HostName="$IP" open-stack
+}
+
+function open_stack_download() {
+	if [[ $# != 2 ]] ; then
+		echo "[ERROR] Expected 2 arguments:"
+		echo "1. the IP address of the OpenStack VM"
+		echo "2. the path to remote FILE"
+		return
+	fi
+
+	IP=$1
+	PATH_REMOTE_FILE=$2
+	PATH_LOCAL_FILE="$(basename "$PATH_REMOTE_FILE")"
+	rm -rf "$PATH_LOCAL_FILE"
+	scp -o HostName="$IP" open-stack:"$PATH_REMOTE_FILE" "$PATH_LOCAL_FILE"
+}
+
+function open_stack_upload() {
+	if [[ $# != 3 ]] ; then
+		echo "[ERROR] Expected 2 arguments:"
+		echo "1. the IP address of the OpenStack VM"
+		echo "2. the path to LOCAL file"
+		echo "3. the path to remote dir"
+		return
+	fi
+
+	IP=$1
+	PATH_LOCAL_FILE=$2
+	PATH_REMOTE_DIR=$3
+	scp -o HostName="$IP" "$PATH_LOCAL_FILE" open-stack:"$PATH_REMOTE_DIR"
+}
+
+
+
+
+
+
+# for PS1 prompt variable
+# get current branch in git repo
+function parse_git_branch() {
+    BRANCH=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+    if [ ! "${BRANCH}" == "" ]; then
+        STAT=$(parse_git_dirty)
+        if [ "${BRANCH}" == "master" ]; then
+            echo -e "[\e[32mgit: master${STAT}\e[0m]"
+        elif [ "${BRANCH}" == "main" ]; then
+            echo -e "[\e[32mgit: main${STAT}\e[0m]"
+        else
+            echo "[git: ${BRANCH}${STAT}]"
+        fi
+    else
+        echo ""
+    fi
+}
+
+
+
+# for PS1 prompt variable
+# get current status of git repo
+function parse_git_dirty {
+	status=`git status 2>&1 | tee`
+	dirty=`echo -n "${status}" 2> /dev/null | grep "modified:" &> /dev/null; echo "$?"`
+	untracked=`echo -n "${status}" 2> /dev/null | grep "Untracked files" &> /dev/null; echo "$?"`
+	ahead=`echo -n "${status}" 2> /dev/null | grep "Your branch is ahead of" &> /dev/null; echo "$?"`
+	newfile=`echo -n "${status}" 2> /dev/null | grep "new file:" &> /dev/null; echo "$?"`
+	renamed=`echo -n "${status}" 2> /dev/null | grep "renamed:" &> /dev/null; echo "$?"`
+	deleted=`echo -n "${status}" 2> /dev/null | grep "deleted:" &> /dev/null; echo "$?"`
+	bits=''
+	if [ "${renamed}" == "0" ]; then
+		bits=">${bits}"
+	fi
+	if [ "${ahead}" == "0" ]; then
+		bits="*${bits}"
+	fi
+	if [ "${newfile}" == "0" ]; then
+		bits="+${bits}"
+	fi
+	if [ "${untracked}" == "0" ]; then
+		bits="?${bits}"
+	fi
+	if [ "${deleted}" == "0" ]; then
+		bits="x${bits}"
+	fi
+	if [ "${dirty}" == "0" ]; then
+		bits="!${bits}"
+	fi
+	if [ ! "${bits}" == "" ]; then
+		echo " ${bits}"
+	else
+		echo ""
+	fi
+}
+
+
+
+
+function git_rename_last_commit() {
+	nr_args=$#
+
+	if [[ $# -ne 1 ]] ; then
+		echo "ERR: expects a single argument, the updated message for last commit"
+		# `return` instead of `exit` to avoid exiting the shell session when sourced in a script or terminal
+		return 1
+	fi
+
+	msg=$1
+	git commit --ammend -m $msg
+	git push -f origin
+}
+
+
+
+function find_replace_in_file() {
+	nr_args=$#
+	
+	if [[ $nr_args -ne 3 ]] ; then
+		echo "ERR: Invalid number of arguments"
+		echo "Expect the OLDTEXT, the NEWTEXT and the path to the file"
+		return 1
+	fi
+
+	old=$1
+	new=$2
+	file=$3
+	sed -i 's/$old/$new/g' $file
+}
+
+
+
+
+function find_replace_text_to_stdout() {
+    nr_args=$#
+
+    if [[ $nr_args -lt 2 || $nr_args -gt 3 ]] ; then
+        echo "ERR: Invalid number of arguments"
+        echo "Expect the OLDTEXT, the NEWTEXT, and optionally the path to the file"
+        return 1
+    fi
+
+    old=$1
+    new=$2
+
+    if [[ $nr_args -eq 3 ]] ; then
+        file=$3
+        sed "s/$old/$new/g" "$file"
+    else
+        # works withe pipes, example: `cat in.txt | sed old new`
+        sed "s/$old/$new/g"
+    fi
+}
+
+
+
+
+function diacritics_replaced_with_ENG_letters() {
+	nr_args=$#
+	func_name=${FUNCNAME[0]}
+
+	if [[ $nr_args != 1 ]] ; then
+		echo "ERR: The script expects a file as argument." >&2
+		echo "Example: $ $func_name file" >&2
+		return 1   # DON'T use 'exit'
+	fi
+
+
+	file=$1
+
+	if [[ ! -f $file ]] ; then
+		echo "ERR: The argument <$file> is not a file." >&2
+		return 1   # DON'T use 'exit'
+	fi
+
+
+	sed -i -E 's/[ĂÂ]/A/g' $file   # ['Ă', 'Â'] -> 'A'
+	sed -i -E 's/[ăâ]/a/g' $file   # ['ă', 'â'] -> 'a'
+
+	sed -i 's/Î/I/g' $file	 # 'Î' -> I
+	sed -i 's/î/i/g' $file   # 'î' -> i
+
+	sed -i 's/Ș/S/g' $file   # 'Ș' -> S
+	sed -i 's/ș/s/g' $file   # 'ș' -> 's'
+
+	sed -i 's/Ț/T/g' $file   # 'Ț' -> 'T'
+	sed -i 's/ț/t/g' $file   # 'ț' -> 't'
+}
