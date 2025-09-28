@@ -56,8 +56,8 @@ It's designed to give you a fully featured dev environment quickly and beautiful
 ## Usage
 
 ```bash
-git clone <your-repo-url>
-cd Linux-Desktop-Setup
+git clone Ubuntu-Desktop-Setup
+cd Ubuntu-Desktop-Setup
 chmod +x setup.sh
 sudo ./setup.sh
 ```
