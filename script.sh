@@ -103,8 +103,11 @@ EOF
     gpg --list-keys --keyid-format=long "$EMAIL" | awk '/^pub/ || /^sub/ || /^uid/ {print}'
 
     echo
-    echo "📋 Your public key (paste into GitHub):"
     gpg --armor --export "$FPR" | copy
+    echo "✅ GPG public key copied to clipboard. Add it to GitHub!"
+    echo "🔑 Add your GPG key here: https://github.com/settings/gpg/new"
+    echo
+    read -p "⏸️ Press Enter after you’ve added the GPG key to GitHub to continue..."
 }
 
 # ================================
@@ -196,7 +199,11 @@ setup_github_ssh() {
 
     ssh-keygen -t ed25519 -f ~/.ssh/github -N ""
     cat ~/.ssh/github.pub | copy
+    echo
     echo "✅ SSH public key copied to clipboard. Add it to GitHub!"
+    echo "🔑 Add your SSH key here: https://github.com/settings/ssh/new"
+    echo
+    read -p "⏸️ Press Enter after you’ve added the SSH key to GitHub to continue..."
 }
 
 # ================================
