@@ -56,7 +56,7 @@ It's designed to give you a fully featured dev environment quickly and beautiful
 ## Usage
 
 ```bash
-git clone Ubuntu-Desktop-Setup
+git clone https://github.com/TrifanBogdan24/Ubuntu-Desktop-Setup.git
 cd Ubuntu-Desktop-Setup
 chmod +x setup.sh
 sudo ./setup.sh
