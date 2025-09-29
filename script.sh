@@ -215,7 +215,7 @@ change_shell_to_zsh() {
 
 
 # ================================
-#  🎬 Run Everything
+#  ▶️ Run Everything
 # ================================
 main() {
     install_basics
